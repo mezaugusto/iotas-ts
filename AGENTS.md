@@ -36,3 +36,9 @@ The library has three layers:
 - **Feature IDs are strings** — feature IDs from the API are numbers but are converted to strings (via `.toString()`) for use as map keys throughout the codebase.
 - **Prettier config** is in `package.json`: single quotes, trailing commas, 2-space indent, semicolons, 120 char print width.
 - **Error logging** — catch blocks log only `error.message` (or `String(error)`) to avoid leaking credentials or tokens from error objects.
+- **Conventional Commits** — commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) (`fix:`, `feat:`, `feat!:`, `docs:`, `chore:`, `refactor:`). Release-please automates versioning and changelogs.
+
+## CI/CD
+
+- **CI** (`.github/workflows/ci.yml` + `ci-shared.yml`) — runs lint, build, test on Node 20/22/24 for PRs to `main`.
+- **Release** (`.github/workflows/release.yml`) — on push to `main`, release-please opens a release PR. Merging it triggers CI then publishes to npm with OIDC provenance (trusted publishers, no npm token needed).
