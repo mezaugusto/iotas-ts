@@ -32,13 +32,15 @@ export class IotasTransport {
   async request<T>(path: string, options: RequestInit = {}, authRetryCount = 0): Promise<T> {
     const token = await this.session.getToken();
 
+    const headers = new Headers(options.headers);
+    headers.set('Authorization', `Bearer ${token}`);
+    if (!headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
+
     const response = await this.fetch(`${this.baseUrl}${path}`, {
       ...options,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers,
     });
 
     if (response.status === 401) {

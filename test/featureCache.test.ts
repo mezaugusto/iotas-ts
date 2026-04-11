@@ -174,11 +174,21 @@ describe('FeatureCache', () => {
     });
 
     it('should only include relevant changed features in callback payload', () => {
-      cache.seed(createMockRooms([{ id: 100, value: 0 }, { id: 200, value: 0 }]));
+      cache.seed(
+        createMockRooms([
+          { id: 100, value: 0 },
+          { id: 200, value: 0 },
+        ]),
+      );
       const callback = mock.fn();
       cache.subscribe(['100'], callback);
 
-      internals().updateFromSnapshot(createMockRooms([{ id: 100, value: 1 }, { id: 200, value: 5 }]));
+      internals().updateFromSnapshot(
+        createMockRooms([
+          { id: 100, value: 1 },
+          { id: 200, value: 5 },
+        ]),
+      );
 
       assert.strictEqual(callback.mock.callCount(), 1);
       const changed = callback.mock.calls[0].arguments[0] as Map<string, number>;

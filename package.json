@@ -17,11 +17,21 @@
     "type": "git",
     "url": "git+https://github.com/mezaugusto/iotas-ts.git"
   },
-  "keywords": ["iotas", "smart-home", "api-client", "homebridge", "matterbridge"],
+  "keywords": [
+    "iotas",
+    "smart-home",
+    "api-client",
+    "homebridge",
+    "matterbridge"
+  ],
   "engines": {
     "node": "^20.18.0 || ^22.10.0 || ^24.0.0"
   },
-  "files": ["dist/src", "README.md", "CHANGELOG.md"],
+  "files": [
+    "dist/src",
+    "README.md",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "build": "rm -rf ./dist && tsc",
     "lint": "eslint . --max-warnings=0",

@@ -30,8 +30,9 @@ describe('IotasTransport', () => {
       const result = await transport.request<{ id: number }>('/account/me');
 
       assert.deepStrictEqual(result, { id: 1 });
-      const options = mockFetch.mock.calls[0].arguments[1] as RequestInit;
-      assert.strictEqual((options.headers as Record<string, string>).Authorization, `Bearer ${mockToken}`);
+      const reqInit = mockFetch.mock.calls[0].arguments[1] as RequestInit;
+      const headers = new Headers(reqInit.headers);
+      assert.strictEqual(headers.get('Authorization'), `Bearer ${mockToken}`);
     });
 
     it('should handle empty response body', async () => {
@@ -80,6 +81,34 @@ describe('IotasTransport', () => {
       await assert.rejects(async () => transport.request('/test'), {
         message: 'API request failed: 500 Internal Server Error',
       });
+    });
+    it('should preserve headers passed as Headers instance', async () => {
+      mockFetch.mock.mockImplementation(async () => {
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      });
+
+      await transport.request('/test', {
+        headers: new Headers({ 'X-Custom': 'custom-value' }),
+      });
+
+      const options = mockFetch.mock.calls[0].arguments[1] as RequestInit;
+      const headers = new Headers(options.headers);
+      assert.strictEqual(headers.get('X-Custom'), 'custom-value');
+      assert.strictEqual(headers.get('Authorization'), `Bearer ${mockToken}`);
+    });
+
+    it('should not allow callers to override Authorization header', async () => {
+      mockFetch.mock.mockImplementation(async () => {
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      });
+
+      await transport.request('/test', {
+        headers: { Authorization: 'Basic evil' },
+      });
+
+      const options = mockFetch.mock.calls[0].arguments[1] as RequestInit;
+      const headers = new Headers(options.headers);
+      assert.strictEqual(headers.get('Authorization'), `Bearer ${mockToken}`);
     });
   });
 });

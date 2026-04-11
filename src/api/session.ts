@@ -163,7 +163,8 @@ export class IotasSession {
         return this.token;
       } catch (error) {
         this.log.error('Token refresh error:', error instanceof Error ? error.message : String(error));
-        return this.authenticate();
+        this.authenticateRequest = null;
+        return this.authenticateWithRetry();
       }
     })();
 

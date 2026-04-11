@@ -100,7 +100,7 @@ export class IotasClient {
     this.log.info(
       'Using first unit found:',
       residencies[0].unitName,
-      '. If you would like to use a custom unit, please set the "unit" property in the config.',
+      '. If you would like to use a custom unit, please set the "unitName" property in the config.',
     );
   }
 

@@ -121,4 +121,36 @@ describe('IotasSession', () => {
       assert.strictEqual(mockFetch.mock.callCount(), 2);
     });
   });
+
+  describe('refresh fallback to re-authentication', () => {
+    it('should re-authenticate when token refresh fails', async () => {
+      // Create an expired JWT (exp in the past)
+      const expiredJwt =
+        'eyJhbGciOiJIUzI1NiJ9.' + Buffer.from(JSON.stringify({ exp: 1 })).toString('base64url') + '.sig';
+      const freshJwt = mockJwt;
+
+      let callIndex = 0;
+      mockFetch.mock.mockImplementation(async () => {
+        callIndex++;
+        if (callIndex === 1) {
+          // Refresh fails
+          return new Response('Server Error', { status: 500 });
+        }
+        // Re-auth succeeds
+        return new Response(JSON.stringify({ jwt: freshJwt, refresh: 'new-refresh' }), { status: 200 });
+      });
+
+      const session = new IotasSession(
+        createOptions({
+          initialTokens: { jwt: expiredJwt, refresh: 'old-refresh' },
+        }),
+      );
+
+      // This should: detect expired → try refresh → refresh fails → fall back to authenticate
+      const token = await session.getToken();
+
+      assert.strictEqual(token, freshJwt);
+      assert.strictEqual(mockFetch.mock.callCount(), 2);
+    });
+  });
 });

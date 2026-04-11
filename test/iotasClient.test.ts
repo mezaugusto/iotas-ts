@@ -184,7 +184,15 @@ describe('IotasClient', () => {
               {
                 id: 1,
                 name: 'Room',
-                devices: [{ id: 10, features: [{ id: 100, value: 1 }, { id: 200, value: 2 }] }],
+                devices: [
+                  {
+                    id: 10,
+                    features: [
+                      { id: 100, value: 1 },
+                      { id: 200, value: 2 },
+                    ],
+                  },
+                ],
               },
             ]),
             { status: 200 },
@@ -201,7 +209,11 @@ describe('IotasClient', () => {
       assert.strictEqual(f1.value, 1);
       assert.ok(f2 !== null);
       assert.strictEqual(f2.value, 2);
-      assert.strictEqual(callsAfterSecond, callsAfterFirst, 'Second getFeature should not trigger additional HTTP calls');
+      assert.strictEqual(
+        callsAfterSecond,
+        callsAfterFirst,
+        'Second getFeature should not trigger additional HTTP calls',
+      );
     });
   });
 

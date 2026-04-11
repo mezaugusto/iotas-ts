@@ -144,7 +144,10 @@ export class FeatureCache {
       this.schedulePoll(this.pollIntervalMs);
     } catch (error) {
       this.consecutiveFailures++;
-      const backoffMs = Math.min(this.pollBackoffBaseMs * Math.pow(2, this.consecutiveFailures - 1), this.pollBackoffMaxMs);
+      const backoffMs = Math.min(
+        this.pollBackoffBaseMs * Math.pow(2, this.consecutiveFailures - 1),
+        this.pollBackoffMaxMs,
+      );
       this.log.error(
         `FeatureCache poll failed (attempt ${this.consecutiveFailures}), retrying in ${backoffMs / 1000}s:`,
         error,
