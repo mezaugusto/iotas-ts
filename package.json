@@ -1,0 +1,49 @@
+{
+  "name": "iotas-ts",
+  "version": "1.0.0",
+  "description": "Wrapper around the IOTAS API for use in matterbridge and homebridge ",
+  "author": "Augusto Meza <mezaugusto@proton.me>",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/src/index.js",
+      "types": "./dist/src/index.d.ts"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mezaugusto/iotas-ts.git"
+  },
+  "keywords": ["iotas", "smart-home", "api-client", "homebridge", "matterbridge"],
+  "engines": {
+    "node": "^20.18.0 || ^22.10.0 || ^24.0.0"
+  },
+  "files": ["dist/src", "README.md", "CHANGELOG.md"],
+  "scripts": {
+    "build": "rm -rf ./dist && tsc",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "tsc && node --test dist/test/*.test.js",
+    "prepublishOnly": "npm run lint && npm run build"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.10.2",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.1",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.2"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "trailingComma": "all",
+    "tabWidth": 2,
+    "semi": true,
+    "printWidth": 120
+  }
+}
