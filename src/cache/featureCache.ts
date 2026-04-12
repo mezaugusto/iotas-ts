@@ -10,6 +10,9 @@ const DEFAULT_POLL_BACKOFF_MAX_MS = 300_000; // 5 minutes max
 
 export type FeatureChangeCallback = (changed: Map<string, number>) => void;
 
+/** Optional transform applied to every rooms snapshot (discovery and polling). */
+export type SnapshotFilter = (rooms: Rooms) => Rooms;
+
 interface Subscription {
   featureIds: Set<string>;
   callback: FeatureChangeCallback;
@@ -36,6 +39,7 @@ export class FeatureCache {
   private readonly writeBarrierMs: number;
   private readonly pollBackoffBaseMs: number;
   private readonly pollBackoffMaxMs: number;
+  private readonly snapshotFilter?: SnapshotFilter;
 
   constructor(
     private readonly log: IotasLogger,
@@ -46,6 +50,7 @@ export class FeatureCache {
     this.writeBarrierMs = options?.writeBarrierMs ?? DEFAULT_WRITE_BARRIER_MS;
     this.pollBackoffBaseMs = options?.pollBackoffBaseMs ?? DEFAULT_POLL_BACKOFF_BASE_MS;
     this.pollBackoffMaxMs = options?.pollBackoffMaxMs ?? DEFAULT_POLL_BACKOFF_MAX_MS;
+    this.snapshotFilter = options?.snapshotFilter;
   }
 
   seed(rooms: Rooms): void {
@@ -138,7 +143,10 @@ export class FeatureCache {
     }
 
     try {
-      const rooms = await this.client.getRooms();
+      let rooms = await this.client.getRooms();
+      if (this.snapshotFilter) {
+        rooms = this.snapshotFilter(rooms);
+      }
       this.updateFromSnapshot(rooms);
       this.consecutiveFailures = 0;
       this.schedulePoll(this.pollIntervalMs);

@@ -42,6 +42,8 @@ export interface FeatureCacheOptions {
   pollBackoffBaseMs?: number;
   /** Maximum backoff delay on poll failure in ms. Default: 300_000 */
   pollBackoffMaxMs?: number;
+  /** Optional transform applied to every rooms snapshot (discovery and polling). */
+  snapshotFilter?: (rooms: Rooms) => Rooms;
 }
 
 export interface Room {
