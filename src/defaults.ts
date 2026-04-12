@@ -1,0 +1,4 @@
+export const DEFAULT_CURRENT_TEMPERATURE_F = 70;
+export const DEFAULT_HEAT_SETPOINT_F = 68;
+export const DEFAULT_COOL_SETPOINT_F = 76;
+export const LOW_BATTERY_THRESHOLD = 20;
