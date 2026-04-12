@@ -6,7 +6,7 @@ export { IotasClient } from './api/iotasClient.js';
 
 // Caching
 export { FeatureCache } from './cache/featureCache.js';
-export type { FeatureChangeCallback } from './cache/featureCache.js';
+export type { FeatureChangeCallback, SnapshotFilter } from './cache/featureCache.js';
 
 // Types
 export type {
@@ -24,4 +24,5 @@ export type {
 } from './types.js';
 
 // Utilities
-export { Temperature } from './utils.js';
+export { Temperature, filterDevices } from './utils.js';
+export type { DeviceFilterOptions } from './utils.js';
