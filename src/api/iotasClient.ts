@@ -1,6 +1,7 @@
 import type { IotasLogger } from '../logger.js';
 
-import type { AccountResponse, Feature, IotasClientOptions, Residency, Rooms } from '../types.js';
+import type { AccountResponse, Device, Feature, IotasClientOptions, Residency, Rooms } from '../types.js';
+import { needsReliableUpdate } from '../quirks.js';
 import { IotasSession } from './session.js';
 import { IotasTransport } from './transport.js';
 
@@ -25,6 +26,7 @@ export class IotasClient {
 
   private unitRequest: Promise<Rooms> | null = null;
   private featureIndex: Map<string, Feature> | null = null;
+  private deviceIndex: Map<string, Device> | null = null;
   private unit = 0;
 
   constructor(options: IotasClientOptions) {
@@ -130,28 +132,56 @@ export class IotasClient {
 
   private buildFeatureIndex(rooms: Rooms): void {
     this.featureIndex = new Map();
+    this.deviceIndex = new Map();
     for (const room of rooms) {
       for (const device of room.devices) {
         for (const feature of device.features) {
           this.featureIndex.set(feature.id.toString(), feature);
+          this.deviceIndex.set(feature.id.toString(), device);
         }
       }
     }
   }
 
-  async updateFeature(featureId: string, value: number): Promise<void> {
-    await this.transport.request(`/feature/${encodeURIComponent(featureId)}/value`, {
-      method: 'PUT',
-      body: JSON.stringify({ value }),
-    });
+  updateFeature(featureId: string, value: number): void {
+    if (!this.deviceIndex) {
+      this.log.error('Device index not built. Call getRooms() first.');
+      return;
+    }
+    const device = this.deviceIndex.get(featureId);
+    if (device && needsReliableUpdate(device)) {
+      this.updateFeatureReliable(featureId, value);
+      return;
+    }
+    this.transport
+      .request(`/feature/${encodeURIComponent(featureId)}/value`, {
+        method: 'PUT',
+        body: JSON.stringify({ value }),
+      })
+      .catch((err) => {
+        this.log.warn(`Failed to update feature ${featureId}:`, err instanceof Error ? err.message : String(err));
+      });
   }
 
-  async updateFeatureReliable(featureId: string, value: number): Promise<void> {
-    for (let attempt = 0; attempt < this.reliableUpdateAttempts; attempt++) {
-      await this.updateFeature(featureId, value);
-      if (attempt < this.reliableUpdateAttempts - 1) {
-        await this.delay(this.reliableUpdateDelayMs);
+  private updateFeatureReliable(featureId: string, value: number): void {
+    const sendUpdates = async () => {
+      for (let attempt = 0; attempt < this.reliableUpdateAttempts; attempt++) {
+        try {
+          await this.transport.request(`/feature/${encodeURIComponent(featureId)}/value`, {
+            method: 'PUT',
+            body: JSON.stringify({ value }),
+          });
+        } catch (err) {
+          this.log.warn(
+            `Failed to update feature ${featureId} (attempt ${attempt + 1}):`,
+            err instanceof Error ? err.message : String(err),
+          );
+        }
+        if (attempt < this.reliableUpdateAttempts - 1) {
+          await this.delay(this.reliableUpdateDelayMs);
+        }
       }
-    }
+    };
+    sendUpdates();
   }
 }

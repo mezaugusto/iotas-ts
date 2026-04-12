@@ -218,20 +218,65 @@ describe('IotasClient', () => {
   });
 
   describe('updateFeature', () => {
-    it('should make PUT request with correct body', async () => {
+    const mockRoomsWithNormalDevice = [
+      {
+        id: 1,
+        unit: 1,
+        name: 'Room',
+        devices: [
+          {
+            id: 10,
+            room: 1,
+            deviceTemplateId: 1,
+            deviceType: 1,
+            name: 'Normal Switch',
+            category: 'switch',
+            active: true,
+            movable: false,
+            secure: false,
+            paired: true,
+            features: [
+              {
+                id: 100,
+                device: 10,
+                featureType: 1,
+                featureTypeName: 'Switch',
+                featureTypeCategory: 'switch',
+                name: 'Switch',
+                isLight: true,
+              },
+            ],
+          },
+        ],
+      },
+    ];
+
+    it('should fire PUT request and return immediately', async () => {
       let callIndex = 0;
+      let putCalled = false;
       mockFetch.mock.mockImplementation(async () => {
         callIndex++;
         if (callIndex === 1) {
           return new Response(JSON.stringify({ jwt: mockJwt, refresh: 'refresh-token' }), { status: 200 });
+        } else if (callIndex === 2) {
+          return new Response(JSON.stringify({ id: 123, email: 'test@example.com' }), { status: 200 });
+        } else if (callIndex === 3) {
+          return new Response(JSON.stringify([{ unit: 1, unitName: 'Unit 1' }]), { status: 200 });
+        } else if (callIndex === 4) {
+          return new Response(JSON.stringify(mockRoomsWithNormalDevice), { status: 200 });
         } else {
+          putCalled = true;
           return new Response(JSON.stringify({}), { status: 200 });
         }
       });
 
-      await client.updateFeature('100', 1);
+      await client.getRooms();
+      client.updateFeature('100', 1);
 
-      const putCall = mockFetch.mock.calls[1];
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      assert.ok(putCalled, 'PUT request should have been fired');
+      const putCall = mockFetch.mock.calls[4];
       const url = putCall.arguments[0] as string;
       const options = putCall.arguments[1] as RequestInit;
       assert.ok(url.includes('/feature/100/value'));
@@ -239,47 +284,197 @@ describe('IotasClient', () => {
       assert.deepStrictEqual(JSON.parse(options.body as string), { value: 1 });
     });
 
-    it('should handle empty response body (HTTP 202)', async () => {
+    it('should log errors instead of throwing', async () => {
       let callIndex = 0;
       mockFetch.mock.mockImplementation(async () => {
         callIndex++;
         if (callIndex === 1) {
           return new Response(JSON.stringify({ jwt: mockJwt, refresh: 'refresh-token' }), { status: 200 });
+        } else if (callIndex === 2) {
+          return new Response(JSON.stringify({ id: 123, email: 'test@example.com' }), { status: 200 });
+        } else if (callIndex === 3) {
+          return new Response(JSON.stringify([{ unit: 1, unitName: 'Unit 1' }]), { status: 200 });
+        } else if (callIndex === 4) {
+          return new Response(JSON.stringify(mockRoomsWithNormalDevice), { status: 200 });
         } else {
-          return new Response('', { status: 202, headers: { 'Content-Length': '0' } });
+          return new Response('Internal Server Error', { status: 500 });
         }
       });
 
-      await assert.doesNotReject(async () => {
-        await client.updateFeature('100', 0.5);
-      });
+      await client.getRooms();
+      client.updateFeature('100', 1);
+
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      const warnMock = mockLog.warn as unknown as ReturnType<typeof mock.fn>;
+      assert.ok(warnMock.mock.callCount() > 0, 'Should have logged a warning');
+      assert.ok(
+        warnMock.mock.calls.some((call) => (call.arguments[0] as string).includes('Failed to update feature 100')),
+        'Warning should mention the feature ID',
+      );
     });
   });
 
-  describe('updateFeatureReliable', () => {
-    it('should send redundant updates for Z-Wave reliability', async () => {
+  describe('auto-detection of reliable mode for Jasco dimmers', () => {
+    // Mock rooms response with a Jasco dimmer device
+    const mockRoomsWithJascoDimmer = [
+      {
+        id: 1,
+        unit: 1,
+        name: 'Living Room',
+        devices: [
+          {
+            id: 10,
+            room: 1,
+            deviceTemplateId: 1,
+            deviceType: 1,
+            name: 'Jasco Dimmer',
+            category: 'dimmer',
+            active: true,
+            movable: false,
+            secure: false,
+            paired: true,
+            features: [
+              {
+                id: 100,
+                device: 10,
+                featureType: 1,
+                featureTypeName: 'Switch',
+                featureTypeCategory: 'switch',
+                name: 'Switch',
+                isLight: true,
+              },
+            ],
+            physicalDeviceDescription: {
+              id: 1,
+              name: 'Jasco Dimmer',
+              manufacturer: '0x0063',
+              model: 'ZW3010',
+              secure: false,
+              movable: false,
+              external: false,
+              protocol: 'zwave',
+              deviceSpecificKey: false,
+              isActive: true,
+            },
+          },
+        ],
+      },
+    ];
+
+    it('should automatically use reliable mode for Jasco dimmers', async () => {
       let callIndex = 0;
+      let putCount = 0;
       mockFetch.mock.mockImplementation(async () => {
         callIndex++;
         if (callIndex === 1) {
           return new Response(JSON.stringify({ jwt: mockJwt, refresh: 'refresh-token' }), { status: 200 });
+        } else if (callIndex === 2) {
+          return new Response(JSON.stringify({ id: 123, email: 'test@example.com' }), { status: 200 });
+        } else if (callIndex === 3) {
+          return new Response(JSON.stringify([{ unit: 1, unitName: 'Unit 1' }]), { status: 200 });
+        } else if (callIndex === 4) {
+          return new Response(JSON.stringify(mockRoomsWithJascoDimmer), { status: 200 });
         } else {
+          putCount++;
           return new Response(JSON.stringify({}), { status: 200 });
         }
       });
 
-      await client.updateFeatureReliable('100', 0);
+      const testClient = new IotasClient(
+        createOptions({
+          reliableUpdate: { attempts: 3, delayMs: 5 },
+          delay: async (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+        }),
+      );
 
-      assert.strictEqual(mockFetch.mock.callCount(), 4);
+      await testClient.getRooms();
 
-      for (let i = 1; i <= 3; i++) {
-        const call = mockFetch.mock.calls[i];
-        const url = call.arguments[0] as string;
-        const options = call.arguments[1] as RequestInit;
-        assert.ok(url.includes('/feature/100/value'), `Call ${i} should target feature endpoint`);
-        assert.strictEqual(options.method, 'PUT');
-        assert.deepStrictEqual(JSON.parse(options.body as string), { value: 0 });
-      }
+      // Now updateFeature should auto-detect the Jasco dimmer and use reliable mode
+      testClient.updateFeature('100', 0);
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      assert.strictEqual(putCount, 3, 'Should have fired 3 PUT requests for Jasco dimmer');
+    });
+
+    it('should use single PUT for non-Jasco devices', async () => {
+      const mockRoomsWithNormalDevice = [
+        {
+          id: 1,
+          unit: 1,
+          name: 'Living Room',
+          devices: [
+            {
+              id: 10,
+              room: 1,
+              deviceTemplateId: 1,
+              deviceType: 1,
+              name: 'Normal Switch',
+              category: 'switch',
+              active: true,
+              movable: false,
+              secure: false,
+              paired: true,
+              features: [
+                {
+                  id: 100,
+                  device: 10,
+                  featureType: 1,
+                  featureTypeName: 'Switch',
+                  featureTypeCategory: 'switch',
+                  name: 'Switch',
+                  isLight: true,
+                },
+              ],
+              physicalDeviceDescription: {
+                id: 1,
+                name: 'Normal Switch',
+                manufacturer: '0x0001',
+                model: 'Switch',
+                secure: false,
+                movable: false,
+                external: false,
+                protocol: 'zwave',
+                deviceSpecificKey: false,
+                isActive: true,
+              },
+            },
+          ],
+        },
+      ];
+
+      let callIndex = 0;
+      let putCount = 0;
+      mockFetch.mock.mockImplementation(async () => {
+        callIndex++;
+        if (callIndex === 1) {
+          return new Response(JSON.stringify({ jwt: mockJwt, refresh: 'refresh-token' }), { status: 200 });
+        } else if (callIndex === 2) {
+          return new Response(JSON.stringify({ id: 123, email: 'test@example.com' }), { status: 200 });
+        } else if (callIndex === 3) {
+          return new Response(JSON.stringify([{ unit: 1, unitName: 'Unit 1' }]), { status: 200 });
+        } else if (callIndex === 4) {
+          return new Response(JSON.stringify(mockRoomsWithNormalDevice), { status: 200 });
+        } else {
+          putCount++;
+          return new Response(JSON.stringify({}), { status: 200 });
+        }
+      });
+
+      const testClient = new IotasClient(
+        createOptions({
+          reliableUpdate: { attempts: 3, delayMs: 5 },
+          delay: async (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+        }),
+      );
+
+      await testClient.getRooms();
+      testClient.updateFeature('100', 0);
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      assert.strictEqual(putCount, 1, 'Should have fired only 1 PUT request for non-Jasco device');
     });
   });
 
