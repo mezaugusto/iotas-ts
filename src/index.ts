@@ -1,14 +1,10 @@
-// Logger interface
 export type { IotasLogger } from './logger.js';
 
-// API Client
 export { IotasClient } from './api/iotasClient.js';
 
-// Caching
 export { FeatureCache } from './cache/featureCache.js';
 export type { FeatureChangeCallback, SnapshotFilter } from './cache/featureCache.js';
 
-// Types
 export type {
   Room,
   Rooms,
@@ -23,6 +19,27 @@ export type {
   FeatureCacheOptions,
 } from './types.js';
 
-// Utilities
 export { Temperature, filterDevices } from './utils.js';
 export type { DeviceFilterOptions } from './utils.js';
+
+export {
+  EventTypeName,
+  FeatureCategory,
+  FeatureTypeName,
+  DeviceCategory,
+  isDeviceCategory,
+  READ_ONLY_CATEGORIES,
+  DISCOVERY_EVENT_TYPES,
+} from './constants.js';
+
+export { getSerialNumber, getManufacturer, getModel, findFeatureByCategory, findFeatureByEventType } from './device.js';
+
+export { isReadOnlyCategory, isSupportedFeature, isDiscoverableFeature, isSupportedDevice } from './predicates.js';
+
+export {
+  ThermostatMode,
+  parseThermostatModeString,
+  parseThermostatModes,
+  getThermostatModeAt,
+  findThermostatModeIndex,
+} from './thermostat.js';

@@ -3,7 +3,7 @@ import type { IotasSession } from './session.js';
 const DEFAULT_BASE_URL = 'https://api.iotashome.com/api/v1';
 const DEFAULT_MAX_REQUEST_AUTH_RETRIES = 1;
 
-export interface IotasTransportOptions {
+interface IotasTransportOptions {
   session: IotasSession;
   baseUrl?: string;
   maxRequestAuthRetries?: number;
