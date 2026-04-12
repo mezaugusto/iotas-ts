@@ -61,6 +61,7 @@ describe('FeatureCache', () => {
 
     mockClient = {
       getRooms: mock.fn(),
+      updateFeature: mock.fn(),
     } as unknown as IotasClient;
 
     cache = new FeatureCache(mockLog, mockClient, { pollIntervalMs: 1000 });
@@ -235,6 +236,29 @@ describe('FeatureCache', () => {
       cache.stop();
 
       assert.strictEqual(cache.get('100'), 0.5);
+    });
+  });
+
+  describe('writeThrough', () => {
+    it('should call both set() and client.updateFeature()', () => {
+      cache.seed(createMockRooms([{ id: 100, value: 0 }]));
+
+      cache.writeThrough('100', 1);
+
+      assert.strictEqual(cache.get('100'), 1);
+
+      const updateFeatureMock = (mockClient as unknown as { updateFeature: ReturnType<typeof mock.fn> }).updateFeature;
+      assert.strictEqual(updateFeatureMock.mock.callCount(), 1);
+      assert.deepStrictEqual(updateFeatureMock.mock.calls[0].arguments, ['100', 1]);
+    });
+
+    it('should set write barrier for subsequent poll updates', () => {
+      cache.seed(createMockRooms([{ id: 100, value: 0 }]));
+
+      cache.writeThrough('100', 1);
+
+      internals().updateFromSnapshot(createMockRooms([{ id: 100, value: 0 }]));
+      assert.strictEqual(cache.get('100'), 1);
     });
   });
 });

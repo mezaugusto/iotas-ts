@@ -10,7 +10,6 @@ const DEFAULT_POLL_BACKOFF_MAX_MS = 300_000; // 5 minutes max
 
 export type FeatureChangeCallback = (changed: Map<string, number>) => void;
 
-/** Optional transform applied to every rooms snapshot (discovery and polling). */
 export type SnapshotFilter = (rooms: Rooms) => Rooms;
 
 interface Subscription {
@@ -73,6 +72,15 @@ export class FeatureCache {
   set(featureId: string, value: number): void {
     this.values.set(featureId, value);
     this.writeTimestamps.set(featureId, Date.now());
+  }
+
+  /**
+   * Write-through: sets cache value with write barrier AND sends the update
+   * to the IOTAS API in one call.
+   */
+  writeThrough(featureId: string, value: number): void {
+    this.set(featureId, value);
+    this.client.updateFeature(featureId, value);
   }
 
   /**
