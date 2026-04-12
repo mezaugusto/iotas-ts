@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/mezaugusto/iotas-ts/compare/v1.1.0...v1.2.0) (2026-04-12)
+
+
+### Features
+
+* :art: export thresholds ([#12](https://github.com/mezaugusto/iotas-ts/issues/12)) ([8b56a7a](https://github.com/mezaugusto/iotas-ts/commit/8b56a7a81361b680f32b5b0d6eb716e3904075bf))
+
 ## [1.1.0](https://github.com/mezaugusto/iotas-ts/compare/v1.0.0...v1.1.0) (2026-04-12)
 
 
