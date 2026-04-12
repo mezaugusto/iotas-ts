@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.0](https://github.com/mezaugusto/iotas-ts/compare/v0.2.0...v1.0.0) (2026-04-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* :sparkles: Use fire-and-forget for feature update ([#8](https://github.com/mezaugusto/iotas-ts/issues/8))
+
+### Features
+
+* :sparkles: Use fire-and-forget for feature update ([#8](https://github.com/mezaugusto/iotas-ts/issues/8)) ([b144cc7](https://github.com/mezaugusto/iotas-ts/commit/b144cc7f5a277df1a945b7a36cae07beddec70ff))
+
 ## [0.2.0](https://github.com/mezaugusto/iotas-ts/compare/v0.1.1...v0.2.0) (2026-04-12)
 
 
