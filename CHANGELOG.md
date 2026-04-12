@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/mezaugusto/iotas-ts/compare/v1.0.0...v1.1.0) (2026-04-12)
+
+
+### Features
+
+* :art: extract shared IOTAS domain logic from plugin integrations ([#10](https://github.com/mezaugusto/iotas-ts/issues/10)) ([342bc0f](https://github.com/mezaugusto/iotas-ts/commit/342bc0fa4fb94540029e5a34ae91878085cbe39d))
+
 ## [1.0.0](https://github.com/mezaugusto/iotas-ts/compare/v0.2.0...v1.0.0) (2026-04-12)
 
 
