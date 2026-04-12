@@ -43,3 +43,10 @@ export {
   getThermostatModeAt,
   findThermostatModeIndex,
 } from './thermostat.js';
+
+export {
+  DEFAULT_CURRENT_TEMPERATURE_F,
+  DEFAULT_HEAT_SETPOINT_F,
+  DEFAULT_COOL_SETPOINT_F,
+  LOW_BATTERY_THRESHOLD,
+} from './defaults.js';
