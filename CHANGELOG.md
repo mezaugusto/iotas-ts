@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/mezaugusto/iotas-ts/compare/v1.3.0...v1.3.1) (2026-04-13)
+
+
+### Bug Fixes
+
+* :memo: add logs for reauth ([#16](https://github.com/mezaugusto/iotas-ts/issues/16)) ([62fb068](https://github.com/mezaugusto/iotas-ts/commit/62fb068c14bf0ce40588d6eea91bc3c7dbe9a2d8))
+
 ## [1.3.0](https://github.com/mezaugusto/iotas-ts/compare/v1.2.0...v1.3.0) (2026-04-13)
 
 
