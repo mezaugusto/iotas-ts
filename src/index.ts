@@ -35,6 +35,10 @@ export { isReadOnlyCategory, isSupportedFeature, isDiscoverableFeature, isSuppor
 
 export { ThermostatMode, parseThermostatModes, getThermostatModeAt, findThermostatModeIndex } from './thermostat.js';
 
+export { FanMode, parseFanModeString, parseFanModes, getFanModeAt, findFanModeIndex } from './fan.js';
+
+export { autoRelockSeconds, isAutoRelockEnabled } from './lock.js';
+
 export {
   DEFAULT_CURRENT_TEMPERATURE_F,
   DEFAULT_HEAT_SETPOINT_F,

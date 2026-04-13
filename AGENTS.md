@@ -19,12 +19,16 @@ npm run build && node --test dist/test/session.test.js
 
 ## Architecture
 
-The library has three layers:
+The library has these layers:
 
 - **`IotasSession`** (`src/api/session.ts`) — manages authentication and token lifecycle (login, JWT refresh, retry with backoff, request deduplication).
 - **`IotasTransport`** (`src/api/transport.ts`) — authenticated HTTP transport. Injects bearer tokens via `Headers` API, retries on 401 by invalidating the token and re-authenticating.
 - **`IotasClient`** (`src/api/iotasClient.ts`) — high-level API client. Resolves the user's unit, discovers rooms/devices/features, and provides feature read/write operations. `getFeature()` uses an O(1) `Map<string, Feature>` index built from `getRooms()`. `updateFeatureReliable` sends redundant PUT calls for Z-Wave reliability. `updateFeature` applies `encodeURIComponent()` to user-provided `featureId` in URL paths.
-- **`FeatureCache`** (`src/cache/featureCache.ts`) — polls `getRooms()` on an interval, caches feature values, and notifies subscribers of changes via `FeatureChangeCallback(changed: Map<string, number>)`. Uses a write barrier to prevent stale poll data from overwriting recent writes, and exponential backoff on poll failures.
+- **`FeatureCache`** (`src/cache/featureCache.ts`) — polls `getRooms()` on an interval, caches feature values, and notifies subscribers of changes via `FeatureChangeCallback(changed: Map<string, number>)`. Uses per-device write barriers to prevent stale poll data from overwriting recent writes, with smart pending-value matching (confirming snapshots clear barriers early). Barrier durations are determined by `getWriteBarrierMs()` from `quirks.ts`. Constructor accepts a `FeatureUpdater & { getRooms() }` interface (not `IotasClient` directly) for decoupling.
+- **`quirks`** (`src/quirks.ts`) — device-specific behavior based on hardware characteristics:
+  - `needsReliableUpdate(device)` — Jasco Z-Wave dimmers get redundant PUT calls.
+  - `getWriteBarrierMs(device)` — locks get 15s write barrier (slow actuator), everything else gets 5s.
+- **`defaults`** (`src/defaults.ts`) — shared constants used by both plugins: thermostat temperature defaults (°F), battery threshold, write barrier durations. Only constants relevant to consumers are exported from `index.ts`; write barrier constants are internal.
 - **`isTokenExpired`** (`src/api/jwt.ts`) — checks JWT `exp` claim without signature verification. Must NOT be used for authN/authZ; only for avoiding sending expired tokens.
 
 ## Conventions
@@ -37,6 +41,15 @@ The library has three layers:
 - **Prettier config** is in `package.json`: single quotes, trailing commas, 2-space indent, semicolons, 120 char print width.
 - **Error logging** — catch blocks log only `error.message` (or `String(error)`) to avoid leaking credentials or tokens from error objects.
 - **Conventional Commits** — commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) (`fix:`, `feat:`, `feat!:`, `docs:`, `chore:`, `refactor:`). Release-please automates versioning and changelogs.
+- **Never push to remote automatically** — always let the user push manually.
+
+## Public API surface
+
+The public API is defined in `src/index.ts`. Key design decisions:
+- Internal-only constants (write barrier durations) are NOT exported — barrier policy is fully owned by the library.
+- Type exports include constructor/method parameter types (`FeatureCacheOptions`, `IotasClientOptions`, etc.) even if plugins don't import them today.
+- `FeatureUpdater` interface is exported for type use but plugins typically pass `IotasClient` directly.
+- `set()` remains public on `FeatureCache` (removing would be a breaking change), but `writeThrough()` is the recommended write path.
 
 ## CI/CD
 
