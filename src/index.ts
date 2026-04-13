@@ -10,9 +10,6 @@ export type {
   Rooms,
   Device,
   Feature,
-  Residency,
-  AuthResponse,
-  AccountResponse,
   PhysicalDeviceDescription,
   IotasClientOptions,
   IotasTokens,
@@ -38,7 +35,6 @@ export { isReadOnlyCategory, isSupportedFeature, isDiscoverableFeature, isSuppor
 
 export {
   ThermostatMode,
-  parseThermostatModeString,
   parseThermostatModes,
   getThermostatModeAt,
   findThermostatModeIndex,

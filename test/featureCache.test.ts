@@ -2,23 +2,27 @@ import { describe, it, beforeEach, mock } from 'node:test';
 import assert from 'node:assert';
 
 import { FeatureCache } from '../src/cache/featureCache.js';
-import type { IotasClient } from '../src/api/iotasClient.js';
+import type { FeatureUpdater } from '../src/cache/featureCache.js';
 import type { IotasLogger } from '../src/logger.js';
 import type { Rooms } from '../src/types.js';
+import { DEFAULT_WRITE_BARRIER_MS, LOCK_WRITE_BARRIER_MS } from '../src/defaults.js';
 
 describe('FeatureCache', () => {
   let cache: FeatureCache;
   let mockLog: IotasLogger;
-  let mockClient: IotasClient;
+  let mockClient: FeatureUpdater & { getRooms(): Promise<Rooms> };
 
   const internals = () =>
     cache as unknown as {
       pollTimer: ReturnType<typeof setTimeout> | null;
-      writeTimestamps: Map<string, number>;
+      writeBarriers: Map<string, { timestamp: number; durationMs: number; pendingValue: number }>;
       updateFromSnapshot: (rooms: Rooms) => void;
     };
 
-  const createMockRooms = (features: Array<{ id: number; value: number }>): Rooms => [
+  const createMockRooms = (
+    features: Array<{ id: number; value: number }>,
+    deviceCategory = 'light',
+  ): Rooms => [
     {
       id: 1,
       unit: 1,
@@ -30,7 +34,7 @@ describe('FeatureCache', () => {
           deviceTemplateId: 1,
           deviceType: 1,
           name: 'Light',
-          category: 'light',
+          category: deviceCategory,
           active: true,
           movable: false,
           secure: false,
@@ -51,6 +55,9 @@ describe('FeatureCache', () => {
     },
   ];
 
+  const createLockRooms = (features: Array<{ id: number; value: number }>): Rooms =>
+    createMockRooms(features, 'lock');
+
   beforeEach(() => {
     mockLog = {
       info: mock.fn(),
@@ -62,7 +69,7 @@ describe('FeatureCache', () => {
     mockClient = {
       getRooms: mock.fn(),
       updateFeature: mock.fn(),
-    } as unknown as IotasClient;
+    } as unknown as FeatureUpdater & { getRooms(): Promise<Rooms> };
 
     cache = new FeatureCache(mockLog, mockClient, { pollIntervalMs: 1000 });
   });
@@ -200,7 +207,7 @@ describe('FeatureCache', () => {
   });
 
   describe('write barrier', () => {
-    it('should ignore poll snapshot within write barrier window', () => {
+    it('should ignore conflicting snapshot within write barrier window', () => {
       cache.seed(createMockRooms([{ id: 100, value: 0 }]));
 
       cache.set('100', 1);
@@ -209,13 +216,93 @@ describe('FeatureCache', () => {
       assert.strictEqual(cache.get('100'), 1);
     });
 
-    it('should accept snapshot after write barrier window expires', () => {
+    it('should accept snapshot that confirms the pending value', () => {
       cache.seed(createMockRooms([{ id: 100, value: 0 }]));
 
       cache.set('100', 1);
-      internals().writeTimestamps.set('100', Date.now() - 6_000);
+      // Snapshot returns same value we wrote — confirmed
+      internals().updateFromSnapshot(createMockRooms([{ id: 100, value: 1 }]));
+
+      assert.strictEqual(cache.get('100'), 1);
+      // Barrier should be cleared
+      assert.strictEqual(internals().writeBarriers.has('100'), false);
+    });
+
+    it('should accept conflicting snapshot after barrier expires', () => {
+      cache.seed(createMockRooms([{ id: 100, value: 0 }]));
+
+      cache.set('100', 1);
+      // Simulate expired barrier
+      internals().writeBarriers.set('100', {
+        timestamp: Date.now() - DEFAULT_WRITE_BARRIER_MS - 1,
+        durationMs: DEFAULT_WRITE_BARRIER_MS,
+        pendingValue: 1,
+      });
       internals().updateFromSnapshot(createMockRooms([{ id: 100, value: 0 }]));
 
+      assert.strictEqual(cache.get('100'), 0);
+    });
+
+    it('should use extended barrier for lock devices', () => {
+      const lockRooms = createLockRooms([{ id: 100, value: 0 }]);
+      cache.seed(lockRooms);
+
+      cache.set('100', 1);
+      // Simulate time past default barrier but within lock barrier
+      internals().writeBarriers.set('100', {
+        timestamp: Date.now() - DEFAULT_WRITE_BARRIER_MS - 1,
+        durationMs: DEFAULT_WRITE_BARRIER_MS,
+        pendingValue: 1,
+      });
+
+      // Lock device should use LOCK_WRITE_BARRIER_MS (15s) via max()
+      internals().updateFromSnapshot(createLockRooms([{ id: 100, value: 0 }]));
+
+      // Still protected by lock barrier
+      assert.strictEqual(cache.get('100'), 1);
+    });
+
+    it('should accept lock snapshot after extended barrier expires', () => {
+      const lockRooms = createLockRooms([{ id: 100, value: 0 }]);
+      cache.seed(lockRooms);
+
+      cache.set('100', 1);
+      // Simulate time past lock barrier
+      internals().writeBarriers.set('100', {
+        timestamp: Date.now() - LOCK_WRITE_BARRIER_MS - 1,
+        durationMs: DEFAULT_WRITE_BARRIER_MS,
+        pendingValue: 1,
+      });
+      internals().updateFromSnapshot(createLockRooms([{ id: 100, value: 0 }]));
+
+      assert.strictEqual(cache.get('100'), 0);
+    });
+
+    it('should accept lock snapshot early when it confirms pending value', () => {
+      const lockRooms = createLockRooms([{ id: 100, value: 0 }]);
+      cache.seed(lockRooms);
+
+      cache.set('100', 1);
+      // Snapshot confirms the lock value we wrote
+      internals().updateFromSnapshot(createLockRooms([{ id: 100, value: 1 }]));
+
+      assert.strictEqual(cache.get('100'), 1);
+      assert.strictEqual(internals().writeBarriers.has('100'), false);
+    });
+
+    it('should use default barrier for non-lock devices', () => {
+      cache.seed(createMockRooms([{ id: 100, value: 0 }]));
+
+      cache.set('100', 1);
+      // Simulate time past default barrier
+      internals().writeBarriers.set('100', {
+        timestamp: Date.now() - DEFAULT_WRITE_BARRIER_MS - 1,
+        durationMs: DEFAULT_WRITE_BARRIER_MS,
+        pendingValue: 1,
+      });
+      internals().updateFromSnapshot(createMockRooms([{ id: 100, value: 0 }]));
+
+      // Default barrier expired — accepts stale value
       assert.strictEqual(cache.get('100'), 0);
     });
   });

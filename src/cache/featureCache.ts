@@ -1,16 +1,27 @@
 import type { IotasLogger } from '../logger.js';
 
-import type { IotasClient } from '../api/iotasClient.js';
+import { getWriteBarrierMs } from '../quirks.js';
+import { DEFAULT_WRITE_BARRIER_MS } from '../defaults.js';
 import type { FeatureCacheOptions, Rooms } from '../types.js';
 
 const DEFAULT_POLL_INTERVAL_MS = 30_000;
-const DEFAULT_WRITE_BARRIER_MS = 5_000;
 const DEFAULT_POLL_BACKOFF_BASE_MS = 5_000;
 const DEFAULT_POLL_BACKOFF_MAX_MS = 300_000; // 5 minutes max
 
 export type FeatureChangeCallback = (changed: Map<string, number>) => void;
 
 export type SnapshotFilter = (rooms: Rooms) => Rooms;
+
+/** Internal interface for sending feature updates to the API. */
+export interface FeatureUpdater {
+  updateFeature(featureId: string, value: number): void;
+}
+
+interface WriteBarrier {
+  timestamp: number;
+  durationMs: number;
+  pendingValue: number;
+}
 
 interface Subscription {
   featureIds: Set<string>;
@@ -22,12 +33,13 @@ interface Subscription {
  *
  * - Seeded from discovery snapshot (no cold-start defaults)
  * - Single getRooms() call per poll cycle
- * - Write barrier prevents stale poll data overwriting recent onSet
+ * - Per-device write barriers prevent stale poll data overwriting recent writes
+ * - Smart pending-value matching: confirming snapshots are accepted early
  * - Subscription model for pushing updates via updateValue
  */
 export class FeatureCache {
   private readonly values = new Map<string, number>();
-  private readonly writeTimestamps = new Map<string, number>();
+  private readonly writeBarriers = new Map<string, WriteBarrier>();
   private readonly subscriptions = new Set<Subscription>();
 
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
@@ -35,18 +47,16 @@ export class FeatureCache {
   private stopped = false;
 
   private readonly pollIntervalMs: number;
-  private readonly writeBarrierMs: number;
   private readonly pollBackoffBaseMs: number;
   private readonly pollBackoffMaxMs: number;
   private readonly snapshotFilter?: SnapshotFilter;
 
   constructor(
     private readonly log: IotasLogger,
-    private readonly client: IotasClient,
+    private readonly client: FeatureUpdater & { getRooms(): Promise<Rooms> },
     options?: FeatureCacheOptions,
   ) {
     this.pollIntervalMs = options?.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
-    this.writeBarrierMs = options?.writeBarrierMs ?? DEFAULT_WRITE_BARRIER_MS;
     this.pollBackoffBaseMs = options?.pollBackoffBaseMs ?? DEFAULT_POLL_BACKOFF_BASE_MS;
     this.pollBackoffMaxMs = options?.pollBackoffMaxMs ?? DEFAULT_POLL_BACKOFF_MAX_MS;
     this.snapshotFilter = options?.snapshotFilter;
@@ -71,7 +81,11 @@ export class FeatureCache {
 
   set(featureId: string, value: number): void {
     this.values.set(featureId, value);
-    this.writeTimestamps.set(featureId, Date.now());
+    this.writeBarriers.set(featureId, {
+      timestamp: Date.now(),
+      durationMs: DEFAULT_WRITE_BARRIER_MS,
+      pendingValue: value,
+    });
   }
 
   /**
@@ -121,7 +135,7 @@ export class FeatureCache {
   /**
    * Reset for a fresh start (used when re-discovering devices).
    *
-   * This clears all cached values, write timestamps, and subscriptions.
+   * This clears all cached values, write barriers, and subscriptions.
    * Callers must re-register subscriptions after calling reset().
    *
    * Expected call order:
@@ -134,7 +148,7 @@ export class FeatureCache {
     this.stop();
     this.stopped = false;
     this.values.clear();
-    this.writeTimestamps.clear();
+    this.writeBarriers.clear();
     this.subscriptions.clear();
   }
 
@@ -178,22 +192,29 @@ export class FeatureCache {
 
     for (const room of rooms) {
       for (const device of room.devices) {
+        const deviceBarrierMs = getWriteBarrierMs(device);
+
         for (const feature of device.features) {
           if (feature.value === undefined) {
             continue;
           }
 
           const featureId = feature.id.toString();
-          const lastWrite = this.writeTimestamps.get(featureId) ?? 0;
+          const barrier = this.writeBarriers.get(featureId);
 
-          // Skip if within write barrier window
-          if (now - lastWrite < this.writeBarrierMs) {
-            continue;
-          }
+          if (barrier) {
+            const effectiveBarrierMs = Math.max(barrier.durationMs, deviceBarrierMs);
 
-          // Clear expired write timestamp
-          if (this.writeTimestamps.has(featureId)) {
-            this.writeTimestamps.delete(featureId);
+            if (feature.value === barrier.pendingValue) {
+              // Snapshot confirms our write — accept and clear barrier
+              this.writeBarriers.delete(featureId);
+            } else if (now - barrier.timestamp < effectiveBarrierMs) {
+              // Conflicting value within barrier window — skip stale data
+              continue;
+            } else {
+              // Barrier expired — accept snapshot regardless
+              this.writeBarriers.delete(featureId);
+            }
           }
 
           const oldValue = this.values.get(featureId);
