@@ -19,10 +19,7 @@ describe('FeatureCache', () => {
       updateFromSnapshot: (rooms: Rooms) => void;
     };
 
-  const createMockRooms = (
-    features: Array<{ id: number; value: number }>,
-    deviceCategory = 'light',
-  ): Rooms => [
+  const createMockRooms = (features: Array<{ id: number; value: number }>, deviceCategory = 'light'): Rooms => [
     {
       id: 1,
       unit: 1,
@@ -55,8 +52,7 @@ describe('FeatureCache', () => {
     },
   ];
 
-  const createLockRooms = (features: Array<{ id: number; value: number }>): Rooms =>
-    createMockRooms(features, 'lock');
+  const createLockRooms = (features: Array<{ id: number; value: number }>): Rooms => createMockRooms(features, 'lock');
 
   beforeEach(() => {
     mockLog = {
