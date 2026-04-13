@@ -36,8 +36,6 @@ export interface IotasClientOptions {
 export interface FeatureCacheOptions {
   /** Polling interval in ms. Default: 30_000 */
   pollIntervalMs?: number;
-  /** Write barrier duration in ms. Default: 5_000 */
-  writeBarrierMs?: number;
   /** Base delay for exponential backoff on poll failure in ms. Default: 5_000 */
   pollBackoffBaseMs?: number;
   /** Maximum backoff delay on poll failure in ms. Default: 300_000 */
