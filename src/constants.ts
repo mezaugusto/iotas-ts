@@ -3,6 +3,7 @@ export const EventTypeName = {
   Level: 'Level',
   Temperature: 'Temperature',
   ThermostatMode: 'ThermostatMode',
+  FanMode: 'FanMode',
   Lock: 'Lock',
 } as const;
 export type EventTypeName = (typeof EventTypeName)[keyof typeof EventTypeName];
@@ -17,6 +18,9 @@ export const FeatureCategory = {
   Battery: 'battery',
   Humidity: 'humidity',
   Motion: 'motion',
+  FanMode: 'fan_mode',
+  AutoRelock: 'auto_relock',
+  AutoRelockTimeout: 'auto_relock_timeout',
   DoorState: 'door_state',
 } as const;
 export type FeatureCategory = (typeof FeatureCategory)[keyof typeof FeatureCategory];
@@ -57,5 +61,6 @@ export const DISCOVERY_EVENT_TYPES: ReadonlySet<string> = new Set([
   EventTypeName.OnOff,
   EventTypeName.Level,
   EventTypeName.ThermostatMode,
+  EventTypeName.FanMode,
   EventTypeName.Lock,
 ]);

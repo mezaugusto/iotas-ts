@@ -62,6 +62,7 @@ describe('DISCOVERY_EVENT_TYPES', () => {
     assert.strictEqual(DISCOVERY_EVENT_TYPES.has(EventTypeName.OnOff), true);
     assert.strictEqual(DISCOVERY_EVENT_TYPES.has(EventTypeName.Level), true);
     assert.strictEqual(DISCOVERY_EVENT_TYPES.has(EventTypeName.ThermostatMode), true);
+    assert.strictEqual(DISCOVERY_EVENT_TYPES.has(EventTypeName.FanMode), true);
     assert.strictEqual(DISCOVERY_EVENT_TYPES.has(EventTypeName.Lock), true);
   });
 
@@ -71,7 +72,7 @@ describe('DISCOVERY_EVENT_TYPES', () => {
     assert.strictEqual(DISCOVERY_EVENT_TYPES.has('Unknown'), false);
   });
 
-  it('has exactly 5 discovery event types', () => {
-    assert.strictEqual(DISCOVERY_EVENT_TYPES.size, 5);
+  it('has exactly 6 discovery event types', () => {
+    assert.strictEqual(DISCOVERY_EVENT_TYPES.size, 6);
   });
 });
