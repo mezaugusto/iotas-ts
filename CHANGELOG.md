@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/mezaugusto/iotas-ts/compare/v1.3.1...v1.4.0) (2026-04-13)
+
+
+### Features
+
+* :sparkles: Implement thermostat fan mode ([#18](https://github.com/mezaugusto/iotas-ts/issues/18)) ([1f8ed8f](https://github.com/mezaugusto/iotas-ts/commit/1f8ed8f6eaba0885fbdf9cef910bb04b998ae013))
+
 ## [1.3.1](https://github.com/mezaugusto/iotas-ts/compare/v1.3.0...v1.3.1) (2026-04-13)
 
 
