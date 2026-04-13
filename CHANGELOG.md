@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.1](https://github.com/mezaugusto/iotas-ts/compare/v2.1.0...v2.1.1) (2026-04-13)
+
+
+### Bug Fixes
+
+* :bricks: Increase Jasco retries to 5 ([#24](https://github.com/mezaugusto/iotas-ts/issues/24)) ([34a4abf](https://github.com/mezaugusto/iotas-ts/commit/34a4abfbd0f6ded3a070269b43fec921b537d735))
+
 ## [2.1.0](https://github.com/mezaugusto/iotas-ts/compare/v2.0.0...v2.1.0) (2026-04-13)
 
 
