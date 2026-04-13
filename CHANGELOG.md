@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/mezaugusto/iotas-ts/compare/v1.2.0...v1.3.0) (2026-04-13)
+
+
+### Features
+
+* :art: Implement write barriers for feature updates ([#14](https://github.com/mezaugusto/iotas-ts/issues/14)) ([aed365d](https://github.com/mezaugusto/iotas-ts/commit/aed365d46317dcec9d6998611e5d3fda796ef2c3))
+
 ## [1.2.0](https://github.com/mezaugusto/iotas-ts/compare/v1.1.0...v1.2.0) (2026-04-12)
 
 
