@@ -21,6 +21,7 @@ export const FeatureCategory = {
   FanMode: 'fan_mode',
   AutoRelock: 'auto_relock',
   AutoRelockTimeout: 'auto_relock_timeout',
+  DoorLockState: 'door_lock_state',
   DoorState: 'door_state',
 } as const;
 export type FeatureCategory = (typeof FeatureCategory)[keyof typeof FeatureCategory];

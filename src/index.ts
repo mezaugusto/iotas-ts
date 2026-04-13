@@ -37,7 +37,7 @@ export { ThermostatMode, parseThermostatModes, getThermostatModeAt, findThermost
 
 export { FanMode, parseFanModeString, parseFanModes, getFanModeAt, findFanModeIndex } from './fan.js';
 
-export { autoRelockSeconds, isAutoRelockEnabled } from './lock.js';
+export { autoRelockSeconds, isAutoRelockEnabled, DoorLockAlarm, isLockedAlarm } from './lock.js';
 
 export {
   DEFAULT_CURRENT_TEMPERATURE_F,

@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { autoRelockSeconds, isAutoRelockEnabled } from '../src/lock.js';
+import { autoRelockSeconds, isAutoRelockEnabled, DoorLockAlarm, isLockedAlarm } from '../src/lock.js';
 
 describe('autoRelockSeconds', () => {
   it('should return timeout when enabled', () => {
@@ -21,5 +21,24 @@ describe('isAutoRelockEnabled', () => {
   });
   it('should return 0 for zero', () => {
     assert.equal(isAutoRelockEnabled(0), 0);
+  });
+});
+
+describe('isLockedAlarm', () => {
+  it('should return true for locked alarm codes', () => {
+    assert.equal(isLockedAlarm(DoorLockAlarm.ManualLock), true);
+    assert.equal(isLockedAlarm(DoorLockAlarm.RFLock), true);
+    assert.equal(isLockedAlarm(DoorLockAlarm.KeypadLock), true);
+    assert.equal(isLockedAlarm(DoorLockAlarm.AutoLock), true);
+  });
+  it('should return false for unlocked alarm codes', () => {
+    assert.equal(isLockedAlarm(DoorLockAlarm.ManualUnlock), false);
+    assert.equal(isLockedAlarm(DoorLockAlarm.RFUnlock), false);
+    assert.equal(isLockedAlarm(DoorLockAlarm.KeypadUnlock), false);
+  });
+  it('should return null for unknown codes', () => {
+    assert.equal(isLockedAlarm(0), null);
+    assert.equal(isLockedAlarm(99), null);
+    assert.equal(isLockedAlarm(DoorLockAlarm.Jammed), null);
   });
 });
