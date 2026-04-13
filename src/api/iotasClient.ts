@@ -5,8 +5,8 @@ import { needsReliableUpdate } from '../quirks.js';
 import { IotasSession } from './session.js';
 import { IotasTransport } from './transport.js';
 
-const DEFAULT_RELIABLE_UPDATE_ATTEMPTS = 3;
-const DEFAULT_RELIABLE_UPDATE_DELAY_MS = 500;
+const DEFAULT_RELIABLE_UPDATE_ATTEMPTS = 5;
+const DEFAULT_RELIABLE_UPDATE_BASE_DELAY_MS = 300;
 
 const defaultDelay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -21,7 +21,7 @@ export class IotasClient {
   private readonly unitName?: string;
   private readonly transport: IotasTransport;
   private readonly reliableUpdateAttempts: number;
-  private readonly reliableUpdateDelayMs: number;
+  private readonly reliableUpdateBaseDelayMs: number;
   private readonly delay: (ms: number) => Promise<void>;
 
   private unitRequest: Promise<Rooms> | null = null;
@@ -33,7 +33,7 @@ export class IotasClient {
     this.log = options.log;
     this.unitName = options.unitName;
     this.reliableUpdateAttempts = options.reliableUpdate?.attempts ?? DEFAULT_RELIABLE_UPDATE_ATTEMPTS;
-    this.reliableUpdateDelayMs = options.reliableUpdate?.delayMs ?? DEFAULT_RELIABLE_UPDATE_DELAY_MS;
+    this.reliableUpdateBaseDelayMs = options.reliableUpdate?.delayMs ?? DEFAULT_RELIABLE_UPDATE_BASE_DELAY_MS;
     this.delay = options.delay ?? defaultDelay;
 
     const session = new IotasSession({
@@ -178,7 +178,7 @@ export class IotasClient {
           );
         }
         if (attempt < this.reliableUpdateAttempts - 1) {
-          await this.delay(this.reliableUpdateDelayMs);
+          await this.delay(this.reliableUpdateBaseDelayMs * 2 ** attempt);
         }
       }
     };
