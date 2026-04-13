@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/mezaugusto/iotas-ts/compare/v2.0.0...v2.1.0) (2026-04-13)
+
+
+### Features
+
+* :sparkles: Implement door lock states ([#22](https://github.com/mezaugusto/iotas-ts/issues/22)) ([3f41c90](https://github.com/mezaugusto/iotas-ts/commit/3f41c9091f1bd5f66bd2662fd7b04ff638b4f730))
+
 ## [2.0.0](https://github.com/mezaugusto/iotas-ts/compare/v1.4.0...v2.0.0) (2026-04-13)
 
 
