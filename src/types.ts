@@ -22,9 +22,9 @@ export interface IotasClientOptions {
   maxRequestAuthRetries?: number;
   /** Config for redundant feature updates (Z-Wave reliability). */
   reliableUpdate?: {
-    /** Number of redundant PUT calls. Default: 3 */
+    /** Number of redundant PUT calls. Default: 5 */
     attempts?: number;
-    /** Delay between redundant calls in ms. Default: 500 */
+    /** Base delay for exponential backoff in ms (delay = base * 2^attempt). Default: 300 */
     delayMs?: number;
   };
   /** Injected fetch function for testing. Default: globalThis.fetch */
