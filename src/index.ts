@@ -33,12 +33,7 @@ export { getSerialNumber, getManufacturer, getModel, findFeatureByCategory, find
 
 export { isReadOnlyCategory, isSupportedFeature, isDiscoverableFeature, isSupportedDevice } from './predicates.js';
 
-export {
-  ThermostatMode,
-  parseThermostatModes,
-  getThermostatModeAt,
-  findThermostatModeIndex,
-} from './thermostat.js';
+export { ThermostatMode, parseThermostatModes, getThermostatModeAt, findThermostatModeIndex } from './thermostat.js';
 
 export {
   DEFAULT_CURRENT_TEMPERATURE_F,

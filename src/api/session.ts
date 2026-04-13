@@ -115,6 +115,7 @@ export class IotasSession {
         this.refreshToken = data.refresh;
         this.token = data.jwt;
         this.onTokensChanged?.({ jwt: this.token, refresh: this.refreshToken });
+        this.log.info('Authentication with IOTAS successful');
         return this.token;
       } catch (error) {
         lastError = error;
@@ -162,7 +163,10 @@ export class IotasSession {
         this.onTokensChanged?.({ jwt: this.token, refresh: this.refreshToken });
         return this.token;
       } catch (error) {
-        this.log.error('Token refresh error:', error instanceof Error ? error.message : String(error));
+        this.log.warn(
+          'Token refresh failed, falling back to full re-authentication:',
+          error instanceof Error ? error.message : String(error),
+        );
         this.authenticateRequest = null;
         return this.authenticateWithRetry();
       }
